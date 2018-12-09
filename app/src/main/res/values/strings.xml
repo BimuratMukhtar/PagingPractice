@@ -1,8 +1,8 @@
 <resources>
-    <string name="app_name"></string>
-    <string name="tab_text_1">Новые</string>
-    <string name="tab_text_2">Tab 2</string>
-    <string name="tab_text_3">Tab 3</string>
+    <string name="app_name">Movies</string>
+    <string name="retry">Retry</string>
     <string name="action_settings">Settings</string>
     <string name="section_format">Hello World from section: %1$d</string>
+    <string name="search_hint">Введите имя фильма</string>
+    <string name="api_key">fe973dadaae90519f2f0afdfc7e9c261</string>
 </resources>

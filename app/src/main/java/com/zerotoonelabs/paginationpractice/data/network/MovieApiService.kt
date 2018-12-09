@@ -8,8 +8,8 @@ import retrofit2.http.Query
 
 
 interface MovieApiService {
-    @GET("/search/movie")
-    fun getMovies(@Query("query") query: String, @Query("page") page: String? = null): Call<MoviesResponse>
+    @GET("search/movie")
+    fun getMovies(@Query("query") query: String, @Query("page") page: Int? = null): Call<MoviesResponse>
 
 
 }

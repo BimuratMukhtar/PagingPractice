@@ -18,9 +18,6 @@ package com.zerotoonelabs.paginationpractice.repository
 
 import androidx.lifecycle.MutableLiveData
 import androidx.paging.PageKeyedDataSource
-import com.android.example.paging.pagingwithnetwork.reddit.api.RedditApi
-import com.android.example.paging.pagingwithnetwork.reddit.repository.NetworkState
-import com.android.example.paging.pagingwithnetwork.reddit.vo.RedditPost
 import com.zerotoonelabs.paginationpractice.data.network.MovieApiService
 import com.zerotoonelabs.paginationpractice.data.network.response.MoviesResponse
 import com.zerotoonelabs.paginationpractice.vo.Movie
@@ -66,10 +63,50 @@ class PageKeyedSubredditDataSource(
         // ignored, since we only ever append to our initial load
     }
 
+    override fun loadInitial(
+        params: LoadInitialParams<Int>,
+        callback: LoadInitialCallback<Int, Movie>) {
+        val request = redditApi.getMovies(
+            query = query
+        )
+        networkState.postValue(NetworkState.LOADING)
+        initialLoad.postValue(NetworkState.LOADING)
+
+        // triggered by a refresh, we better execute sync
+
+        try {
+            val response = request.execute()
+            val data = response.body()
+            if(response.isSuccessful){
+                val items = data?.results ?: emptyList()
+                retry = null
+                networkState.postValue(NetworkState.LOADED)
+                initialLoad.postValue(NetworkState.LOADED)
+                callback.onResult(items, null, getNextPageNumber(data))
+            }else{
+                retry = {
+                    loadInitial(params, callback)
+                }
+                val error = NetworkState.error(response.body()?.statusMessage ?: "unknown error")
+                networkState.postValue(error)
+                initialLoad.postValue(error)
+            }
+        } catch (ioException: IOException) {
+            retry = {
+                loadInitial(params, callback)
+            }
+            val error = NetworkState.error(ioException.message ?: "unknown error")
+            networkState.postValue(error)
+            initialLoad.postValue(error)
+        }
+    }
+
+
     override fun loadAfter(params: LoadParams<Int>, callback: LoadCallback<Int, Movie>) {
         networkState.postValue(NetworkState.LOADING)
         redditApi.getMovies(query = query,
-                page = params.key).enqueue(
+                page = params.key)
+            .enqueue(
                 object : retrofit2.Callback<MoviesResponse> {
                     override fun onFailure(call: Call<MoviesResponse>, t: Throwable) {
                         retry = {
@@ -85,45 +122,27 @@ class PageKeyedSubredditDataSource(
                             val data = response.body()
                             val items = data?.results ?: emptyList()
                             retry = null
-                            callback.onResult(items, data?.page ?: 0 + 1)
+                            callback.onResult(items, getNextPageNumber(data))
                             networkState.postValue(NetworkState.LOADED)
                         } else {
                             retry = {
                                 loadAfter(params, callback)
                             }
                             networkState.postValue(
-                                    NetworkState.error("error code: ${response.code()}"))
+                                    NetworkState.error(response.body()?.statusMessage ?: "unknown error"))
                         }
                     }
                 }
         )
     }
 
-    override fun loadInitial(
-            params: LoadInitialParams<Int>,
-            callback: LoadInitialCallback<Int, Movie>) {
-        val request = redditApi.getMovies(
-                query = query
-        )
-        networkState.postValue(NetworkState.LOADING)
-        initialLoad.postValue(NetworkState.LOADING)
-
-        // triggered by a refresh, we better execute sync
-        try {
-            val response = request.execute()
-            val data = response.body()
-            val items = data?.results?.map { it.data } ?: emptyList()
-            retry = null
-            networkState.postValue(NetworkState.LOADED)
-            initialLoad.postValue(NetworkState.LOADED)
-            callback.onResult(items, data?.before, data?.after)
-        } catch (ioException: IOException) {
-            retry = {
-                loadInitial(params, callback)
-            }
-            val error = NetworkState.error(ioException.message ?: "unknown error")
-            networkState.postValue(error)
-            initialLoad.postValue(error)
+    private fun getNextPageNumber(data: MoviesResponse?): Int?{
+        if(data == null)
+            return null
+        return if(data.page < data.totalPages){
+            data.page + 1
+        }else{
+            null
         }
     }
 }

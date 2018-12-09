@@ -2,9 +2,10 @@ package com.zerotoonelabs.paginationpractice.repository
 
 import androidx.annotation.MainThread
 import androidx.lifecycle.Transformations
+import androidx.paging.toLiveData
 import com.zerotoonelabs.paginationpractice.data.network.AppExecutors
 import com.zerotoonelabs.paginationpractice.data.network.MovieApiService
-import com.zerotoonelabs.paginationpractice.data.network.response.MoviesResponse
+import com.zerotoonelabs.paginationpractice.vo.Movie
 
 class DataRepository(
     private val apiService: MovieApiService,
@@ -12,7 +13,7 @@ class DataRepository(
 ) {
 
     @MainThread
-    fun postsOfSubreddit(subReddit: String, pageSize: Int): Listing<MoviesResponse> {
+    fun moviesByQuery(subReddit: String, pageSize: Int): Listing<Movie> {
         val sourceFactory = SubRedditDataSourceFactory(apiService, subReddit, executors.networkIO())
 
         // We use toLiveData Kotlin extension function here, you could also use LivePagedListBuilder

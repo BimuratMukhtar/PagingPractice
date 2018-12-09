@@ -11,18 +11,30 @@ class SearchViewModel(
 
     private val _query = MutableLiveData<String>()
     private val repoResult = Transformations.map(_query) {
-        dataRepo.postsOfSubreddit(it, 30)
+        dataRepo.moviesByQuery(it, 30)
     }
-    val posts = Transformations.switchMap(repoResult, { it.pagedList })!!
-    val networkState = Transformations.switchMap(repoResult, { it.networkState })!!
-    val refreshState = Transformations.switchMap(repoResult, { it.refreshState })!!
+    val movies = Transformations.switchMap(repoResult) { it.pagedList }!!
+    val networkState = Transformations.switchMap(repoResult) { it.networkState }!!
+    val refreshState = Transformations.switchMap(repoResult) { it.refreshState }!!
 
-
-    fun getMovies(query: String): Boolean {
+    fun showMovies(query: String): Boolean {
         if (_query.value == query) {
             return false
         }
         _query.value = query
         return true
+    }
+
+    fun refresh() {
+        repoResult.value?.refresh?.invoke()
+    }
+
+    fun retry() {
+        val listing = repoResult?.value
+        listing?.retry?.invoke()
+    }
+
+    fun currentQuery(): String?{
+        return _query.value
     }
 }

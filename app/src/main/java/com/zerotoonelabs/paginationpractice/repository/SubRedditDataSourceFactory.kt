@@ -18,10 +18,7 @@ package com.zerotoonelabs.paginationpractice.repository
 
 import androidx.lifecycle.MutableLiveData
 import androidx.paging.DataSource
-import com.android.example.paging.pagingwithnetwork.reddit.api.RedditApi
-import com.android.example.paging.pagingwithnetwork.reddit.vo.RedditPost
 import com.zerotoonelabs.paginationpractice.data.network.MovieApiService
-import com.zerotoonelabs.paginationpractice.data.network.response.MoviesResponse
 import com.zerotoonelabs.paginationpractice.vo.Movie
 import java.util.concurrent.Executor
 
@@ -33,9 +30,9 @@ import java.util.concurrent.Executor
 class SubRedditDataSourceFactory(
         private val redditApi: MovieApiService,
         private val subredditName: String,
-        private val retryExecutor: Executor) : DataSource.Factory<String, Movie>() {
+        private val retryExecutor: Executor) : DataSource.Factory<Int, Movie>() {
     val sourceLiveData = MutableLiveData<PageKeyedSubredditDataSource>()
-    override fun create(): DataSource<String, Movie> {
+    override fun create(): DataSource<Int, Movie> {
         val source = PageKeyedSubredditDataSource(redditApi, subredditName, retryExecutor)
         sourceLiveData.postValue(source)
         return source
