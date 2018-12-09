@@ -37,7 +37,7 @@ import java.util.concurrent.Executor
 class PageKeyedSubredditDataSource(
     private val redditApi: MovieApiService,
     private val query: String,
-    private val retryExecutor: Executor) : PageKeyedDataSource<String, Movie>() {
+    private val retryExecutor: Executor) : PageKeyedDataSource<Int, Movie>() {
 
     // keep a function reference for the retry event
     private var retry: (() -> Any)? = null
@@ -61,12 +61,12 @@ class PageKeyedSubredditDataSource(
     }
 
     override fun loadBefore(
-            params: LoadParams<String>,
-            callback: LoadCallback<String, Movie>) {
+            params: LoadParams<Int>,
+            callback: LoadCallback<Int, Movie>) {
         // ignored, since we only ever append to our initial load
     }
 
-    override fun loadAfter(params: LoadParams<String>, callback: LoadCallback<String, Movie>) {
+    override fun loadAfter(params: LoadParams<Int>, callback: LoadCallback<Int, Movie>) {
         networkState.postValue(NetworkState.LOADING)
         redditApi.getMovies(query = query,
                 page = params.key).enqueue(
@@ -85,7 +85,7 @@ class PageKeyedSubredditDataSource(
                             val data = response.body()
                             val items = data?.results ?: emptyList()
                             retry = null
-                            callback.onResult(items, data?.after)
+                            callback.onResult(items, data?.page ?: 0 + 1)
                             networkState.postValue(NetworkState.LOADED)
                         } else {
                             retry = {
@@ -100,8 +100,8 @@ class PageKeyedSubredditDataSource(
     }
 
     override fun loadInitial(
-            params: LoadInitialParams<String>,
-            callback: LoadInitialCallback<String, Movie>) {
+            params: LoadInitialParams<Int>,
+            callback: LoadInitialCallback<Int, Movie>) {
         val request = redditApi.getMovies(
                 query = query
         )
