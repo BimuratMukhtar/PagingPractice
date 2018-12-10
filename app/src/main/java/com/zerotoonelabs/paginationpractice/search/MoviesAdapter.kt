@@ -28,15 +28,16 @@ import com.zerotoonelabs.paginationpractice.vo.Movie
 /**
  * A simple adapter implementation that shows Reddit posts.
  */
-class PostsAdapter(
+class MoviesAdapter(
     private val glide: GlideRequests,
-    private val retryCallback: () -> Unit
+    private val retryCallback: () -> Unit,
+    private val clickListener: (movie: Movie) -> Unit
 ) : PagedListAdapter<Movie, RecyclerView.ViewHolder>(POST_COMPARATOR) {
     private var networkState: NetworkState? = null
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (getItemViewType(position)) {
-            R.layout.item_movie -> (holder as RedditPostViewHolder).bind(getItem(position))
+            R.layout.item_movie -> (holder as MoviesViewHolder).bind(getItem(position))
             R.layout.item_network_state -> (holder as NetworkStateItemViewHolder).bindTo(
                 networkState
             )
@@ -45,7 +46,7 @@ class PostsAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return when (viewType) {
-            R.layout.item_movie -> RedditPostViewHolder.create(parent, glide)
+            R.layout.item_movie -> MoviesViewHolder.create(parent, glide, clickListener)
             R.layout.item_network_state -> NetworkStateItemViewHolder.create(parent, retryCallback)
             else -> throw IllegalArgumentException("unknown view type $viewType")
         }

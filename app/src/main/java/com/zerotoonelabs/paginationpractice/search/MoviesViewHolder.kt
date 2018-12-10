@@ -22,56 +22,49 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import androidx.swiperefreshlayout.widget.CircularProgressDrawable
 import com.zerotoonelabs.paginationpractice.GlideRequests
 import com.zerotoonelabs.paginationpractice.R
-import com.zerotoonelabs.paginationpractice.util.UrlProvider
+import com.zerotoonelabs.paginationpractice.util.loadWithGlide
 import com.zerotoonelabs.paginationpractice.vo.Movie
 
 /**
- * A RecyclerView ViewHolder that displays a reddit post.
+ * A RecyclerView ViewHolder that displays a reddit movie.
  */
-class RedditPostViewHolder(view: View, private val glide: GlideRequests) : RecyclerView.ViewHolder(view) {
+class MoviesViewHolder(
+    view: View,
+    private val glide: GlideRequests,
+    private val clickListener: (movie: Movie) -> Unit
+) : RecyclerView.ViewHolder(view) {
     private val title: TextView = view.findViewById(R.id.text_movie_title)
     private val overview: TextView = view.findViewById(R.id.text_overview)
     private val score: TextView = view.findViewById(R.id.text_rating)
     private val thumbnail: ImageView = view.findViewById(R.id.image_poster)
-    private var post: Movie? = null
+    private var movie: Movie? = null
 
-    init {
-        view.setOnClickListener {
-            post?.let { url ->
-
-            }
-        }
-    }
-
-    fun bind(post: Movie?) {
-        this.post = post
-        title.text = post?.title ?: "loading"
-        overview.text = post?.overview ?: "unknown"
-        score.text = "${post?.popularity ?: 0}"
-        if (post?.posterPath != null) {
+    fun bind(movie: Movie?) {
+        this.movie = movie
+        title.text = movie?.title ?: "loading"
+        overview.text = movie?.overview ?: "unknown"
+        score.text = "${movie?.popularity ?: 0}"
+        if (movie?.posterPath != null) {
             thumbnail.visibility = View.VISIBLE
-            val circularProgressDrawable = CircularProgressDrawable(itemView.context)
-            circularProgressDrawable.strokeWidth = 10f
-            circularProgressDrawable.centerRadius = 30f
-            circularProgressDrawable.start()
-            glide.load(UrlProvider.IMAGE_BASE_URL_LOW_RESOLUTION + post.posterPath)
-                .centerInside()
-                .placeholder(circularProgressDrawable)
-                .into(thumbnail)
+            thumbnail.loadWithGlide(movie.posterPath, glide)
         } else {
             thumbnail.visibility = View.GONE
             glide.clear(thumbnail)
         }
+        itemView.setOnClickListener {
+            movie?.let {
+                clickListener(it)
+            }
+        }
     }
 
     companion object {
-        fun create(parent: ViewGroup, glide: GlideRequests): RedditPostViewHolder {
+        fun create(parent: ViewGroup, glide: GlideRequests, clickListener: (movie: Movie) -> Unit): MoviesViewHolder {
             val view = LayoutInflater.from(parent.context)
                 .inflate(R.layout.item_movie, parent, false)
-            return RedditPostViewHolder(view, glide)
+            return MoviesViewHolder(view, glide, clickListener)
         }
     }
 }

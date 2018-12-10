@@ -8,12 +8,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
+import androidx.fragment.app.FragmentTransaction
 import androidx.lifecycle.Observer
 import androidx.paging.PagedList
 import androidx.recyclerview.widget.GridLayoutManager
 import com.zerotoonelabs.paginationpractice.GlideApp
 
 import com.zerotoonelabs.paginationpractice.R
+import com.zerotoonelabs.paginationpractice.detail.DetailFragment
 import com.zerotoonelabs.paginationpractice.repository.NetworkState
 import com.zerotoonelabs.paginationpractice.vo.Movie
 import kotlinx.android.synthetic.main.search_fragment.*
@@ -43,7 +45,7 @@ class SearchFragment : Fragment() {
         initSwipeToRefresh()
         initSearch()
         val previosQuery = savedInstanceState?.getString(KEY_QUERY)
-        if(!previosQuery.isNullOrEmpty()){
+        if (!previosQuery.isNullOrEmpty()) {
             model.showMovies(previosQuery)
         }
     }
@@ -55,8 +57,11 @@ class SearchFragment : Fragment() {
 
     private fun initAdapter() {
         val glide = GlideApp.with(this)
-        val adapter = PostsAdapter(glide) {
+        val adapter = MoviesAdapter(glide, {
             model.retry()
+        }) {
+            navigateDetailFragment(it)
+
         }
 
         val columnCount = if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
@@ -100,12 +105,23 @@ class SearchFragment : Fragment() {
         }
     }
 
+    private fun navigateDetailFragment(movie: Movie) {
+        val fragment = DetailFragment.newInstance(movie)
+        requireActivity().supportFragmentManager
+            .beginTransaction()
+            .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+            .addToBackStack(DetailFragment.TAG)
+            .replace(R.id.fl_container, fragment, DetailFragment.TAG)
+            .commitAllowingStateLoss()
+
+    }
+
     private fun updateMoviesFromInput() {
         input.text.trim().toString().let {
             if (it.isNotEmpty()) {
                 if (model.showMovies(it)) {
                     recycler_search.scrollToPosition(0)
-                    (recycler_search.adapter as? PostsAdapter)?.submitList(null)
+                    (recycler_search.adapter as? MoviesAdapter)?.submitList(null)
                 }
             }
         }

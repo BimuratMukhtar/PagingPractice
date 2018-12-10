@@ -2,8 +2,10 @@ package com.zerotoonelabs.paginationpractice.di
 
 import com.zerotoonelabs.paginationpractice.BuildConfig
 import com.zerotoonelabs.paginationpractice.R
+import com.zerotoonelabs.paginationpractice.data.db.Db
 import com.zerotoonelabs.paginationpractice.data.network.AppExecutors
 import com.zerotoonelabs.paginationpractice.data.network.MovieApiService
+import com.zerotoonelabs.paginationpractice.detail.DetailViewModel
 import com.zerotoonelabs.paginationpractice.repository.DataRepository
 import com.zerotoonelabs.paginationpractice.search.SearchViewModel
 import com.zerotoonelabs.paginationpractice.util.UrlProvider
@@ -56,7 +58,9 @@ val appModule = module {
     }
 
     single { AppExecutors() }
+    single { Db.getInstance(androidContext()).movieDao() }
 
     single<DataRepository>()
     viewModel<SearchViewModel>()
+    viewModel<DetailViewModel>()
 }
