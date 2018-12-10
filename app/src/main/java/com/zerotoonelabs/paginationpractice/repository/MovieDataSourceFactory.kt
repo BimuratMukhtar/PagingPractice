@@ -27,13 +27,13 @@ import java.util.concurrent.Executor
  * This allows us to channel its network request status etc back to the UI. See the Listing creation
  * in the Repository class.
  */
-class SubRedditDataSourceFactory(
+class MovieDataSourceFactory(
         private val redditApi: MovieApiService,
         private val subredditName: String,
         private val retryExecutor: Executor) : DataSource.Factory<Int, Movie>() {
-    val sourceLiveData = MutableLiveData<PageKeyedSubredditDataSource>()
+    val sourceLiveData = MutableLiveData<PageKeyedMovieDataSource>()
     override fun create(): DataSource<Int, Movie> {
-        val source = PageKeyedSubredditDataSource(redditApi, subredditName, retryExecutor)
+        val source = PageKeyedMovieDataSource(redditApi, subredditName, retryExecutor)
         sourceLiveData.postValue(source)
         return source
     }

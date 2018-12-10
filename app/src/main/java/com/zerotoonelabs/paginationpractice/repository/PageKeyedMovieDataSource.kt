@@ -18,12 +18,14 @@ package com.zerotoonelabs.paginationpractice.repository
 
 import androidx.lifecycle.MutableLiveData
 import androidx.paging.PageKeyedDataSource
+import com.zerotoonelabs.paginationpractice.R
 import com.zerotoonelabs.paginationpractice.data.network.MovieApiService
 import com.zerotoonelabs.paginationpractice.data.network.response.MoviesResponse
 import com.zerotoonelabs.paginationpractice.vo.Movie
 import retrofit2.Call
 import retrofit2.Response
 import java.io.IOException
+import java.net.UnknownHostException
 import java.util.concurrent.Executor
 
 /**
@@ -31,10 +33,11 @@ import java.util.concurrent.Executor
  * <p>
  * See ItemKeyedSubredditDataSource
  */
-class PageKeyedSubredditDataSource(
+class PageKeyedMovieDataSource(
     private val redditApi: MovieApiService,
     private val query: String,
-    private val retryExecutor: Executor) : PageKeyedDataSource<Int, Movie>() {
+    private val retryExecutor: Executor
+) : PageKeyedDataSource<Int, Movie>() {
 
     // keep a function reference for the retry event
     private var retry: (() -> Any)? = null
@@ -58,14 +61,16 @@ class PageKeyedSubredditDataSource(
     }
 
     override fun loadBefore(
-            params: LoadParams<Int>,
-            callback: LoadCallback<Int, Movie>) {
+        params: LoadParams<Int>,
+        callback: LoadCallback<Int, Movie>
+    ) {
         // ignored, since we only ever append to our initial load
     }
 
     override fun loadInitial(
         params: LoadInitialParams<Int>,
-        callback: LoadInitialCallback<Int, Movie>) {
+        callback: LoadInitialCallback<Int, Movie>
+    ) {
         val request = redditApi.getMovies(
             query = query
         )
@@ -77,13 +82,20 @@ class PageKeyedSubredditDataSource(
         try {
             val response = request.execute()
             val data = response.body()
-            if(response.isSuccessful){
+            if (response.isSuccessful) {
                 val items = data?.results ?: emptyList()
-                retry = null
-                networkState.postValue(NetworkState.LOADED)
+                if(items.isEmpty()){
+                    retry = {
+                        loadInitial(params, callback)
+                    }
+                    networkState.postValue(NetworkState.error(R.string.error_no_data_found))
+                }else{
+                    retry = null
+                    networkState.postValue(NetworkState.LOADED)
+                    callback.onResult(items, null, getNextPageNumber(data))
+                }
                 initialLoad.postValue(NetworkState.LOADED)
-                callback.onResult(items, null, getNextPageNumber(data))
-            }else{
+            } else {
                 retry = {
                     loadInitial(params, callback)
                 }
@@ -95,7 +107,11 @@ class PageKeyedSubredditDataSource(
             retry = {
                 loadInitial(params, callback)
             }
-            val error = NetworkState.error(ioException.message ?: "unknown error")
+            val error = if (ioException is UnknownHostException) {
+                NetworkState.error(R.string.error_no_internet)
+            } else {
+                NetworkState.error(ioException.message ?: "unknown error")
+            }
             networkState.postValue(error)
             initialLoad.postValue(error)
         }
@@ -104,20 +120,28 @@ class PageKeyedSubredditDataSource(
 
     override fun loadAfter(params: LoadParams<Int>, callback: LoadCallback<Int, Movie>) {
         networkState.postValue(NetworkState.LOADING)
-        redditApi.getMovies(query = query,
-                page = params.key)
+        redditApi.getMovies(
+            query = query,
+            page = params.key
+        )
             .enqueue(
                 object : retrofit2.Callback<MoviesResponse> {
                     override fun onFailure(call: Call<MoviesResponse>, t: Throwable) {
                         retry = {
                             loadAfter(params, callback)
                         }
-                        networkState.postValue(NetworkState.error(t.message ?: "unknown err"))
+                        val error = if (t is UnknownHostException) {
+                            NetworkState.error(R.string.error_no_internet)
+                        } else {
+                            NetworkState.error(t.message ?: "unknown error")
+                        }
+                        networkState.postValue(error)
                     }
 
                     override fun onResponse(
-                            call: Call<MoviesResponse>,
-                            response: Response<MoviesResponse>) {
+                        call: Call<MoviesResponse>,
+                        response: Response<MoviesResponse>
+                    ) {
                         if (response.isSuccessful) {
                             val data = response.body()
                             val items = data?.results ?: emptyList()
@@ -128,20 +152,22 @@ class PageKeyedSubredditDataSource(
                             retry = {
                                 loadAfter(params, callback)
                             }
+
                             networkState.postValue(
-                                    NetworkState.error(response.body()?.statusMessage ?: "unknown error"))
+                                NetworkState.error(response.body()?.statusMessage ?: "unknown error")
+                            )
                         }
                     }
                 }
-        )
+            )
     }
 
-    private fun getNextPageNumber(data: MoviesResponse?): Int?{
-        if(data == null)
+    private fun getNextPageNumber(data: MoviesResponse?): Int? {
+        if (data == null)
             return null
-        return if(data.page < data.totalPages){
+        return if (data.page < data.totalPages) {
             data.page + 1
-        }else{
+        } else {
             null
         }
     }

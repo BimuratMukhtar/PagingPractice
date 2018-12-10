@@ -16,6 +16,9 @@
 
 package com.zerotoonelabs.paginationpractice.repository
 
+import android.content.Context
+import com.zerotoonelabs.paginationpractice.R
+
 enum class Status {
     RUNNING,
     SUCCESS,
@@ -25,10 +28,18 @@ enum class Status {
 @Suppress("DataClassPrivateConstructor")
 data class NetworkState private constructor(
     val status: Status,
-    val msg: String? = null) {
+    val msg: String? = null,
+    val msgId: Int? = null) {
     companion object {
         val LOADED = NetworkState(Status.SUCCESS)
         val LOADING = NetworkState(Status.RUNNING)
         fun error(msg: String?) = NetworkState(Status.FAILED, msg)
+        fun error(msgId: Int?) = NetworkState(Status.FAILED, msgId = msgId)
+    }
+
+    fun getResourceMessage(context: Context): String?{
+        if(msgId != null)
+            return context.getString(msgId)
+        return msg
     }
 }

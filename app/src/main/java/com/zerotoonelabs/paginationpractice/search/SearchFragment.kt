@@ -81,7 +81,9 @@ class SearchFragment : Fragment() {
 
     private fun initSwipeToRefresh() {
         model.refreshState.observe(this, Observer {
-            swipe_refresh.isRefreshing = it == NetworkState.LOADING
+            if(it == NetworkState.LOADED){
+                swipe_refresh.isRefreshing = false
+            }
         })
         swipe_refresh.setOnRefreshListener {
             model.refresh()
